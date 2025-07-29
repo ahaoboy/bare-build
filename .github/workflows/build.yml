@@ -54,7 +54,8 @@ jobs:
             curl
             wget
       - name: install-llvm-${{ matrix.target }}
-        if: matrix.os != 'windows-latest'
+        if: matrix.os == 'ubuntu-24.04'
+        # if: matrix.os != 'windows-latest'
         shell: "bash"
         run: |
           curl -L -o llvm.sh https://apt.llvm.org/llvm.sh
