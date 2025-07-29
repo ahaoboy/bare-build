@@ -53,6 +53,12 @@ jobs:
             unzip
             curl
             wget
+      - name: install-llvm-${{ matrix.target }}
+        if: matrix.os == 'ubuntu-24.04'
+        shell: "bash"
+        run: |
+          wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && ./llvm.sh 20 clang lld
+
       - name: build-${{ matrix.target }}
         if: matrix.os != 'windows-latest'
         shell: "bash"
@@ -95,11 +101,11 @@ jobs:
     strategy:
       matrix:
         os: [
-          ubuntu-24.04,
-          #  windows-latest,
-          macos-14,
-          macos-13
-        ]
+            ubuntu-24.04,
+            #  windows-latest,
+            macos-14,
+            macos-13,
+          ]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
