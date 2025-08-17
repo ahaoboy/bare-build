@@ -23,7 +23,7 @@ RUN_ID=$(curl -H "Authorization: token $GITHUB_TOKEN" -s "https://api.github.com
     head -n 1)
 
 if [ -z "$RUN_ID" ]; then
-    echo "Error: Failed to find any recent ladybird-js build" >&2
+    echo "Error: Failed to find any recent bare-js build" >&2
     exit 1
 fi
 
@@ -35,26 +35,12 @@ echo "TARGET: $TARGET"
 download_url="https://nightly.link/holepunchto/bare/suites/${RUN_ID}/artifacts/${ARTIFACT_ID}"
 
 echo "Download URL: $download_url"
+bare="bare-js-$TARGET"
 
 curl -H "Authorization: token $GITHUB_TOKEN" \
     -H "Accept: application/octet-stream" \
-    -L -o "${ARTIFACT_NAME}" "$download_url"
+    -L -o "${bare}.zip" "$download_url"
 
-unzip -j "${ARTIFACT_NAME}"
-
-ladybird="ladybird-js-$TARGET"
-mkdir -p "$ladybird"
-
-tar -xzf "${GZ_NAME}.tar.gz" -C "$ladybird"
-
-mv "$ladybird/bin/js" "$ladybird/js"
-rm -r "$ladybird/bin"
-
-cd "$ladybird"
-zip -r "../${ladybird}.zip" .
-
-cd ..
-
-echo "Done! Output zip file: ${ladybird}.zip"
+echo "Done! Output zip file: ${bare}.zip"
 
 ls -lh
