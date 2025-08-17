@@ -35,7 +35,7 @@ echo "TARGET: $TARGET"
 download_url="https://nightly.link/holepunchto/bare/suites/${RUN_ID}/artifacts/${ARTIFACT_ID}"
 
 echo "Download URL: $download_url"
-bare="bare-js-$TARGET"
+bare="bare-$TARGET"
 
 curl -H "Authorization: token $GITHUB_TOKEN" \
     -H "Accept: application/octet-stream" \
