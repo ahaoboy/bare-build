@@ -10,92 +10,94 @@ on:
     branches:
       - "main"
   pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
 
 defaults:
   run:
     shell: bash --noprofile --norc -CeEuo pipefail {0}
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: x86_64-apple-darwin
-            os: macos-13
-          - target: aarch64-apple-darwin
-            os: macos-14
-          # - target: x86_64-pc-windows-gnu
-          #   os: windows-latest
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-24.04
-    runs-on: ${{ matrix.os }}
-    name: build-${{ matrix.target }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: latest
-      - uses: msys2/setup-msys2@v2
-        if: matrix.os == 'windows-latest'
-        with:
-          msystem: MINGW64
-          update: true
-          path-type: inherit
-          install: >-
-            mingw-w64-x86_64-make
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-clang
-            mingw-w64-x86_64-perl
-            mingw-w64-x86_64-python3
-            zip
-            unzip
-            curl
-            wget
-      - name: install-llvm-${{ matrix.target }}
-        if: matrix.os == 'ubuntu-24.04'
-        # if: matrix.os != 'windows-latest'
-        shell: "bash"
-        run: |
-          curl -L -o llvm.sh https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 20 clang lld
+  # build:
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - target: aarch64-apple-darwin
+  #           os: macos-15
+  #         # - target: x86_64-pc-windows-gnu
+  #         #   os: windows-latest
+  #         - target: x86_64-unknown-linux-gnu
+  #           os: ubuntu-24.04
+  #   runs-on: ${{ matrix.os }}
+  #   name: build-${{ matrix.target }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: latest
+  #     - uses: msys2/setup-msys2@v2
+  #       if: matrix.os == 'windows-latest'
+  #       with:
+  #         msystem: MINGW64
+  #         update: true
+  #         path-type: inherit
+  #         install: >-
+  #           mingw-w64-x86_64-make
+  #           mingw-w64-x86_64-cmake
+  #           mingw-w64-x86_64-gcc
+  #           mingw-w64-x86_64-clang
+  #           mingw-w64-x86_64-perl
+  #           mingw-w64-x86_64-python3
+  #           zip
+  #           unzip
+  #           curl
+  #           wget
+  #     - name: install-llvm-${{ matrix.target }}
+  #       if: matrix.os == 'ubuntu-24.04'
+  #       # if: matrix.os != 'windows-latest'
+  #       shell: "bash"
+  #       run: |
+  #         curl -L -o llvm.sh https://apt.llvm.org/llvm.sh
+  #         chmod +x llvm.sh
+  #         sudo ./llvm.sh 20 clang lld
 
-      - name: build-${{ matrix.target }}
-        if: matrix.os != 'windows-latest'
-        shell: "bash"
-        run: |
-          bash build.sh ${{ matrix.target }}
+  #     - name: build-${{ matrix.target }}
+  #       if: matrix.os != 'windows-latest'
+  #       shell: "bash"
+  #       run: |
+  #         bash build.sh ${{ matrix.target }}
 
-      - name: build-windows
-        if: matrix.os == 'windows-latest'
-        shell: msys2 {0}
-        run: |
-          bash build.sh ${{ matrix.target }}
+  #     - name: build-windows
+  #       if: matrix.os == 'windows-latest'
+  #       shell: msys2 {0}
+  #       run: |
+  #         bash build.sh ${{ matrix.target }}
 
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: bare-${{ matrix.target }}
-          path: ./bare-${{ matrix.target }}.tar.gz
+  #     - name: Upload
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: bare-${{ matrix.target }}
+  #         path: ./bare-${{ matrix.target }}.tar.gz
   release:
-    needs: build
+    # needs: build
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Download All Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: bare
-          pattern: bare*
-          merge-multiple: true
+      - name: build
+        id: build
+        run: |
+         bash ./download.sh linux-x64 linux-x64 x86_64-unknown-linux-gnu ${{ secrets.GITHUB_TOKEN }}
+         bash ./download.sh darwin-arm64 darwin-arm64 aarch64-apple-darwin ${{ secrets.GITHUB_TOKEN }}
+         bash ./download.sh win32-x64 win32-x64 x86_64-pc-windows-gnu ${{ secrets.GITHUB_TOKEN }}
 
       - name: release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "bare/*.tar.gz"
+          # tag: ${{ steps.build.outputs.tag }}
+          tag: nightly
+          artifacts: "*.zip"
           allowUpdates: true
 
   post-test:
