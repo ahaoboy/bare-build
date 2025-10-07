@@ -44,3 +44,15 @@ curl -H "Authorization: token $GITHUB_TOKEN" \
 echo "Done! Output zip file: ${bare}.zip"
 
 ls -lh
+
+file="${bare}.zip"
+
+if [ "$(uname)" = "Darwin" ]; then
+  size=$(stat -f%z "$file")
+else
+  size=$(stat -c%s "$file")
+fi
+
+if [ "$size" -lt 1048576 ]; then
+  rm "$file"
+fi
